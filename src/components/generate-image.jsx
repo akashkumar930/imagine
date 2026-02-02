@@ -73,6 +73,9 @@ const GenerateImage = () => {
 
       for (const part of response.candidates[0].content.parts) {
         const imageData = part?.inlineData?.data;
+        if(!imageData) {
+          continue;
+        }
         const image = `data:image/png;base64,${imageData}`;
 
         const newImage = {
@@ -105,6 +108,12 @@ const GenerateImage = () => {
 
       <div className="flex flex-col items-center gap-4">
         <Textarea
+          onKeyDown={(e) => {
+            if (e.ctrlKey && e.key === "Enter") {
+              handleGenerate();
+            }
+          }}
+          className="w-full max-w-2xl"
           placeholder="Write a prompt to generate image"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
