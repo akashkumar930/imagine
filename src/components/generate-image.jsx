@@ -54,6 +54,10 @@ const GenerateImage = () => {
 
   const handleGenerate = async () => {
     // Logic to generate image based on prompt
+    if(!prompt || (typeof prompt !== "string") || !(prompt.length > 2)){
+      setError("Please provide a valid prompt.")
+      return;
+    }
     setIsGenerating(true);
     const modifiedPrompt = `Create an Image for the this prompt: ${prompt}`;
     const ai = new GoogleGenAI({
@@ -97,7 +101,7 @@ const GenerateImage = () => {
           onChange={(e) => setPrompt(e.target.value)}
         ></Textarea>
         <Button
-          disabled={isGenerating}
+          disabled={isGenerating || !prompt || !(prompt.length > 2) }
           onClick={handleGenerate}
           className="cursor-pointer"
         >
