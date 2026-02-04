@@ -2,10 +2,11 @@ import React from "react";
 import { Textarea } from "./ui/textarea";
 import { Button } from "./ui/button";
 import { LayoutGrid } from "./ui/layout-grid";
+import { GoogleGenAI } from "@google/genai";
+
+import { Skeleton } from "./ui/skeleton";
 
 import { useState } from "react";
-// import { GoogleGenAI } from "@google/genai";
-import { Skeleton } from "./ui/skeleton";
 
 const cards = [
   {
@@ -53,55 +54,35 @@ const GenerateImage = () => {
 
   const handleGenerate = async () => {
     // Logic to generate image based on prompt
-    setIsGenerating(true);
-    const modifiedPrompt = `Create an image for this prompt: ${prompt}`;
-    const ai = new GoogleGenAI({
-      apiKey: import.meta.env.GOOGLE_AI_API_KEY,
-    })
-    try {
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-image",
-        contents: modifiedPrompt,
-      });
-
-      for(const part of response.candidates[0].content.parts){
-        const imageData = part?.inlineData?.data;
-        // console.log(imageData);
-        //convert to base64 using string literals
-        const image = `data:image/png;base64,${imageData}`;
-        setImages((prevImages) => [...prevImages, image]);
-      }
-      setError("");
-
-      
-    } catch(error){
-      setError(error.message);
-    }finally{
-      setIsGenerating(false);
-    }
   };
 
   return (
-    <section className="flex flex-col gap-4 w-full max-w-4xl h-full">
-      <h1 className="text-4xl font-bold text-muted-foreground">
+    <section className="flex flex-col gap-4 w-full max-w-4xl">
+      <h1 className="text-4xl font-bold text-muted-foreground text-center">
         Generate Image with AI
       </h1>
-      <p className="text-sm text-gray-600 dark:text-gray-400">
+      <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
         Generate realistic images using AI technology.
       </p>
 
       <div className="flex flex-col items-center gap-4">
-        <Textarea 
+        <Textarea
+          onKeyDown={(e) => {
+            if (e.ctrlKey && e.key === "Enter") {
+              handleGenerate();
+            }
+          }}
+          className="w-full max-w-2xl"
           placeholder="Write a prompt to generate image"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
         ></Textarea>
         <Button
-          disabled={isGenerating}
+          disabled={isGenerating || !prompt || !(prompt.length > 2)}
           onClick={handleGenerate}
           className="cursor-pointer"
         >
-          {isGenerating ? "Generating..." : "Generate Image"}
+          {isGenerating ? <Loader /> : "Generate Image"}
         </Button>
       </div>
       {error && (
@@ -110,23 +91,42 @@ const GenerateImage = () => {
         </p>
       )}
       <div className="w-full h-full p-10">
-        {isGenerating ? (
-          <imageSkeleton />
-        ) : (
-          <div className="">
-            {images?.map((image, index) => (
-              <img key={index} src={image} alt="image" className="size-60" />
-            ))}
-          </div>
-        )}
+        {images?.map((image,index) => (
+          <img key={index} src={image.url} alt={image.title} className="size-60" />
+        ))}
       </div>
-
-      {/* <LayoutGrid cards={cards} /> */}
     </section>
   );
 };
 
+//TODO: isGenerating && !image.thumbnail ? <ImageSkeleton /> : <img />
+
 export default GenerateImage;
+
+const ImageSkeleton = () => {
+  return <Skeleton className="h-40 w-40 rounded-md" />;
+};
+
+const Content = ({ prompt, imageUrl }) => {
+  const downloadImage = (imageUrl, filename = "downloaded_image.png") => {
+    // Create a temporary anchor element
+    const link = document.createElement("a");
+    link.href = imageUrl;
+    link.download = filename; // Set the desired file name for the download
+
+    // Append link to body, click it, and remove it
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  return (
+    <div className="h-full w-full flex items-center justify-center flex-col gap-4">
+      <p className="text-sm text-white line-clamp-2">{prompt.trim()}</p>
+      <Button className="cursor-pointer" onClick={() => downloadImage(imageUrl)}>Download Image</Button>
+    </div>
+  );
+};
 
 
 const imageSkeleton = () => {
